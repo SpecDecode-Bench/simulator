@@ -1,0 +1,12 @@
+__pycache__/
+.vscode/
+bazel*
+*.png
+.DS_Store
+
+
+data/
+figures/
+results
+*.csv
+*.log
