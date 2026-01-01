@@ -17,8 +17,8 @@ Run the full simulation for all datasets, proposers, and methods:
 ```bash
 ./simulate.sh
 ```
-
-Results will be saved to the `results/` directory.
+The simulator will read in the data from `data/{model}/combined_{dataset}.jsonl` and save the results to `results/{proposer}_{dataset}_speedup.csv`.
+In `data/`, we share our profiled acceptance data for each dataset of Llama3.1-8B-Instruct with H100.
 
 ## Usage
 
@@ -62,3 +62,9 @@ Each file contains columns:
 - `predict_method`: The prediction method
 - `acc_method`: The acceptance ground truth method
 - `speedup`: The measured speedup value
+
+## Add Other Models and Hardware
+Coming soon.
+
+## Citation
+Coming soon.

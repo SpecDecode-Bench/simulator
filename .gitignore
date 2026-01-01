@@ -5,7 +5,7 @@ bazel*
 .DS_Store
 
 
-data/
+# data/
 figures/
 results
 *.csv
