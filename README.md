@@ -1,6 +1,6 @@
 # SpecBench Simulator
 
-A simulator for speculative decoding methods with different proposers and prediction strategies. Note that we only support Llama3.1-8B-Instruct with H100 for now, but it is easy to extend to other models or hardware.
+A simulator for speculative decoding methods with different proposers and prediction strategies. You can find more details in our [paper](https://arxiv.org/abs/2601.11580). Note that we only support Llama3.1-8B-Instruct with H100 for now, but it is easy to extend to other models or hardware.
 
 ## Installation
 
@@ -67,8 +67,9 @@ Each file contains columns:
 Coming soon.
 
 ## Citation
+Please cite our paper if you find the repository helpful. Thank you!
 ```
-@misc{liu2025speculativedecodingperformanceillusion,
+@misc{liu2025specdecode,
       title={Speculative Decoding: Performance or Illusion?}, 
       author={Xiaoxuan Liu and Jiaxiang Yu and Jongseok Park and Ion Stoica and Alvin Cheung},
       year={2025},
