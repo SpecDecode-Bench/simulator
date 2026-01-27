@@ -67,4 +67,14 @@ Each file contains columns:
 Coming soon.
 
 ## Citation
-Coming soon.
+```
+@misc{liu2025speculativedecodingperformanceillusion,
+      title={Speculative Decoding: Performance or Illusion?}, 
+      author={Xiaoxuan Liu and Jiaxiang Yu and Jongseok Park and Ion Stoica and Alvin Cheung},
+      year={2025},
+      eprint={2601.11580},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2601.11580}, 
+}
+```
