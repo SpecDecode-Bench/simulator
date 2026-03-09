@@ -79,3 +79,17 @@ echo ""
 echo "Summary:"
 echo "  - Total CSV files: $(ls ${OUTPUT_DIR}/*.csv 2>/dev/null | wc -l)"
 echo "  - Location: ${OUTPUT_DIR}/"
+echo ""
+
+# Generate plots
+echo "=========================================="
+echo "Generating Plots..."
+echo "=========================================="
+/data/jxyu/miniconda3/spec-sim/bin/python plot.py \
+    --results-dir ${OUTPUT_DIR} \
+    --figures-dir figures \
+    --datasets ${DATASETS} \
+    --proposers eagle3 ngram combined
+
+echo ""
+echo "Plots saved to figures/"
