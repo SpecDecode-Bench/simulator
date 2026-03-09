@@ -12,31 +12,36 @@ pip install -r requirements.txt
 
 ## Quick Start
 
-Run the full simulation for all datasets, proposers, and methods:
+Run the full simulation and generate plots for all datasets, proposers, and methods:
 
 ```bash
 ./simulate.sh
 ```
-The simulator will read in the data from `data/{model}/combined_{dataset}.jsonl` and save the results to `results/{proposer}_{dataset}_speedup.csv`.
-In `data/`, we share our profiled acceptance data for each dataset of Llama3.1-8B-Instruct with H100.
+
+This will:
+1. Run simulations for EAGLE3, NGRAM, and combined proposers across all datasets
+2. Save results to `results/{proposer}_{dataset}_speedup.csv`
+3. Generate speedup plots and legends to `figures/llama3.1-8B/`
+
+Input data is read from `data/{model}/combined_{dataset}.jsonl`. We share our profiled acceptance data for Llama3.1-8B-Instruct on H100 in `data/`.
 
 ## Usage
 
-### Basic Command
+### Simulation
 
 ```bash
 python main.py --proposer <proposer> --datasets <datasets> --batch-sizes <sizes>
 ```
 
-### Options
+**Options**
 
 - `--proposer`: Proposer method (`eagle3`, `ngram`, `combined`)
 - `--datasets`: One or more datasets (`gsm8k`, `instructcoder`, `sharegpt`, `cnn`)
-- `--predict-methods`: Prediction methods (`FIXED_1`, `FIXED_3`, `FIXED_5`, `ORACLE`)
-- `--batch-sizes`: Batch sizes to test (e.g., `1 8 16 32 64 128`)
-- `--output-dir`: Directory for output CSV files (default: `.`)
+- `--predict-methods`: Prediction methods (`FIXED_1`, `FIXED_3`, `FIXED_5`, `ORACLE`). Ignored for `combined` (always uses `ORACLE`)
+- `--batch-sizes`: Batch sizes to test (default: `1 8 16 32 64 128`)
+- `--output-dir`: Directory for output CSV files (default: `results`)
 
-### Examples
+**Examples**
 
 Run EAGLE3 on a single dataset:
 ```bash
@@ -53,15 +58,35 @@ Run combined proposer (automatically uses ORACLE):
 python main.py --proposer combined --datasets cnn
 ```
 
-### Output
+**Output**
 
-Results are saved as CSV files with the format: `{proposer}_{dataset}_speedup.csv`
-
-Each file contains columns:
+Results are saved as `results/{proposer}_{dataset}_speedup.csv` with columns:
 - `batch_size`: The batch size used
-- `predict_method`: The prediction method
-- `acc_method`: The acceptance ground truth method
+- `predict_method`: The prediction method (`FIXED_1`, `FIXED_3`, `FIXED_5`, `ORACLE`)
+- `acc_method`: The acceptance ground truth method (`EAGLE`, `NGRAM`, `COMBINE_NGRAM_EAGLE`)
 - `speedup`: The measured speedup value
+
+### Plotting
+
+```bash
+python plot.py --results-dir <dir> --figures-dir <dir> --proposers <proposers> --datasets <datasets>
+```
+
+**Options**
+
+- `--results-dir`: Directory containing simulation CSV files (default: `results`)
+- `--figures-dir`: Directory to save output figures (default: `figures`)
+- `--model`: Model name used to organize output subdirectory (default: `llama3.1-8B`)
+- `--proposers`: One or more proposers to plot (`eagle3`, `ngram`, `combined`; default: `eagle3 ngram`)
+- `--datasets`: One or more datasets to plot (default: all four)
+
+**Example**
+
+```bash
+python plot.py --proposers eagle3 ngram combined --datasets gsm8k sharegpt
+```
+
+Figures are saved as `figures/{model}/{proposer}_{dataset}_speedup.pdf`. A standalone legend file `{proposer}_legend_only.pdf` is also saved per proposer type. For `combined` plots, data from all three proposers is merged and lines are colored by acceptance method (EAGLE3, N-gram, Combine).
 
 ## Add Other Models and Hardware
 Coming soon.
