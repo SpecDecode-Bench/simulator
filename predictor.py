@@ -13,6 +13,7 @@ class Llama8BH100:
 
     ngram_draft_percentage = 0.005875
     overhead_constant_per_step = 1.20683946e-03
+    combined_switching_overhead = 0.0
 
 
 class ProposeMethod(Enum):
@@ -48,6 +49,9 @@ class TimePredictor:
 
     def get_overhead_per_step(self):
         return self.model.overhead_constant_per_step
+
+    def get_switching_overhead(self):
+        return self.model.combined_switching_overhead
 
 class AccLenPredictor:
     def __init__(self, method: AccLenPredictMethod):

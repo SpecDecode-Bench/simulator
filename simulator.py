@@ -172,6 +172,7 @@ class SpecSimulator:
             req.cur_gen_len = 1
 
         step_input_lens = {}
+        prev_winning_method = {}
         step = 0
         while len(unfinished_requests) > 0:
             num_batched_tokens = 0
@@ -194,7 +195,15 @@ class SpecSimulator:
                 else:
                     draft_time = self.time_predictor.predict_draft_time(verify_time, num_tokens_in_kv, step_input_lens[req.id])
                 max_draft_time = max(max_draft_time, draft_time)
-                request_latencies[req.id].append(verify_time + draft_time + self.time_predictor.get_overhead_per_step())
+
+                step_switching_overhead = 0.0
+                if self.acc_gt_method in (AccLenGroundTruth.COMBINE_NGRAM_EAGLE, AccLenGroundTruth.COMBINE_NGRAM_EAGLE_THREE):
+                    cur_winner = self._get_winning_method(req)
+                    if req.id in prev_winning_method and prev_winning_method[req.id] != cur_winner:
+                        step_switching_overhead = self.time_predictor.get_switching_overhead()
+                    prev_winning_method[req.id] = cur_winner
+
+                request_latencies[req.id].append(verify_time + draft_time + self.time_predictor.get_overhead_per_step() + step_switching_overhead)
                 step_gen_len = self.get_step_gen_len(req)
                 accepted_tokens = min(step_gen_len, step_input_lens[req.id])
                 req.cur_gen_len += accepted_tokens
@@ -229,6 +238,19 @@ class SpecSimulator:
             return False
         # else, we simulate a probability of not matching
         return gt_acc_len == 1 and not random.random() < NGRAM_MATCHING_PROBABILITY[self.dataset]
+
+    def _get_winning_method(self, req: Request) -> ProposeMethod:
+        """For combined proposers, return which sub-method produces the longer acceptance length at the current position."""
+        pos = req.cur_gen_len - 1
+        if self.acc_gt_method == AccLenGroundTruth.COMBINE_NGRAM_EAGLE:
+            if req.acc_lens_ngram[pos] >= req.acc_lens_eagle[pos]:
+                return ProposeMethod.NGRAM
+            return ProposeMethod.EAGLE
+        elif self.acc_gt_method == AccLenGroundTruth.COMBINE_NGRAM_EAGLE_THREE:
+            if req.acc_lens_ngram[pos] >= req.acc_lens_eagle_three[pos]:
+                return ProposeMethod.NGRAM
+            return ProposeMethod.EAGLE
+        return None
 
     def get_step_gen_len(self, req: Request) -> int:
         if self.acc_gt_method == AccLenGroundTruth.NGRAM:
