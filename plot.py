@@ -21,9 +21,9 @@ PMNAMES = {
 }
 
 AMNAMES = {
-    "NGRAM": "N-gram",
-    "EAGLE": "EAGLE3",
-    "COMBINE_NGRAM_EAGLE": "Combined",
+    "NGRAM": "Oracle_N-gram",
+    "EAGLE": "Oracle_EAGLE3",
+    "COMBINE_NGRAM_EAGLE": "Oracle_Combined",
 }
 
 MARKERS_COLORS_AM = {
@@ -58,7 +58,6 @@ def save_legend_only(df, output_filepath, ncol=None, fontsize=16, combined=False
     if combined and 'switching_overhead' in df.columns and df[df['acc_method'] == "COMBINE_NGRAM_EAGLE"]['switching_overhead'].nunique() > 1:
         patch = ax.fill_between([], [], [], color=MARKERS_COLORS_AM["COMBINE_NGRAM_EAGLE"], alpha=0.2)
         handles.append(patch)
-        labels.append("Switching overhead")
 
     if ncol is None:
         ncol = len(handles)
@@ -161,9 +160,15 @@ if __name__ == "__main__":
         if combined:
             dfs = []
             for p in ["eagle3", "ngram", "combined"]:
-                dfs.append(pd.read_csv(os.path.join(args.results_dir, p, f"{dataset}_speedup.csv")))
+                df = pd.read_csv(os.path.join(args.results_dir, p, f"{dataset}_speedup.csv"))
+                if 'switching_overhead' not in df.columns:
+                    df['switching_overhead'] = 0.0
+                dfs.append(df)
             return pd.concat(dfs, ignore_index=True)
-        return pd.read_csv(os.path.join(args.results_dir, proposer, f"{dataset}_speedup.csv"))
+        df = pd.read_csv(os.path.join(args.results_dir, proposer, f"{dataset}_speedup.csv"))
+        if 'switching_overhead' not in df.columns:
+            df['switching_overhead'] = 0.0
+        return df
 
     for dataset in args.datasets:
         for proposer in args.proposers:
