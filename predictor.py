@@ -40,13 +40,14 @@ class TimePredictor:
         print("Warning: this should not be used.")
         return self.model.overhead_constant
 
-    def predict_draft_time(self, verify_time, num_tokens_in_kv_cache: int, num_spec_tokens: int):
-        if self.method == ProposeMethod.NGRAM:
+    def predict_draft_time(self, verify_time, num_tokens_in_kv_cache: int, num_spec_tokens: int, method=None):
+        method = method if method is not None else self.method
+        if method == ProposeMethod.NGRAM:
             return verify_time * self.model.ngram_draft_percentage
-        elif self.method == ProposeMethod.EAGLE:
+        elif method == ProposeMethod.EAGLE:
             return num_tokens_in_kv_cache * self.model.draft_c_kv + num_spec_tokens * self.model.draft_c_num_spec_tokens + self.model.draft_c_fixed
         else:
-            raise ValueError(f"Unsupported draft method: {self.method}")
+            raise ValueError(f"Unsupported draft method: {method}")
 
     def get_overhead_per_step(self):
         return self.model.overhead_constant_per_step

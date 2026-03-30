@@ -36,10 +36,13 @@ class SpecSimulator:
     def get_propose_method(self):
         if self.acc_gt_method == AccLenGroundTruth.NGRAM:
             return ProposeMethod.NGRAM
-        elif self.acc_gt_method == AccLenGroundTruth.EAGLE:
+        elif self.acc_gt_method == AccLenGroundTruth.EAGLE or self.acc_gt_method == AccLenGroundTruth.EAGLE_THREE:
             return ProposeMethod.EAGLE
+        elif self.acc_gt_method == AccLenGroundTruth.COMBINE_NGRAM_EAGLE or self.acc_gt_method == AccLenGroundTruth.COMBINE_NGRAM_EAGLE_THREE:
+            print(f"[Warning] Combined method detected, effective drafting method will be determined at runtime.")
+            return ProposeMethod.NGRAM
         else:
-            print(f"[Warning] Unknown Ground Truth Acc Len: {self.acc_gt_method}, always use NGRAM.")
+            print(f"[Warning] Unknown Ground Truth Acc Len: {self.acc_gt_method}, defaulting to use NGRAM.")
             return ProposeMethod.NGRAM
 
     def load_data(self, method: AccLenGroundTruth) -> list[Request]:
@@ -189,19 +192,22 @@ class SpecSimulator:
             max_draft_time = 0
             unfinished_requests_after_step = []
             for req in unfinished_requests:
+                # For combined methods, determine the winning drafter first so draft time is accurate
+                step_switching_overhead = 0.0
+                effective_draft_method = None
+                if self.acc_gt_method in (AccLenGroundTruth.COMBINE_NGRAM_EAGLE, AccLenGroundTruth.COMBINE_NGRAM_EAGLE_THREE):
+                    cur_winner = self._get_winning_method(req)
+                    effective_draft_method = cur_winner
+                    if req.id in prev_winning_method and prev_winning_method[req.id] != cur_winner:
+                        step_switching_overhead = self.time_predictor.get_switching_overhead()
+                    prev_winning_method[req.id] = cur_winner
+
                 # ngram not matched, NOTE: not very accurate, it could be matched but not accepted.
                 if self.acc_gt_method == AccLenGroundTruth.NGRAM and step_input_lens[req.id] == 1:
                     draft_time = 0
                 else:
-                    draft_time = self.time_predictor.predict_draft_time(verify_time, num_tokens_in_kv, step_input_lens[req.id])
+                    draft_time = self.time_predictor.predict_draft_time(verify_time, num_tokens_in_kv, step_input_lens[req.id], method=effective_draft_method)
                 max_draft_time = max(max_draft_time, draft_time)
-
-                step_switching_overhead = 0.0
-                if self.acc_gt_method in (AccLenGroundTruth.COMBINE_NGRAM_EAGLE, AccLenGroundTruth.COMBINE_NGRAM_EAGLE_THREE):
-                    cur_winner = self._get_winning_method(req)
-                    if req.id in prev_winning_method and prev_winning_method[req.id] != cur_winner:
-                        step_switching_overhead = self.time_predictor.get_switching_overhead()
-                    prev_winning_method[req.id] = cur_winner
 
                 request_latencies[req.id].append(verify_time + draft_time + self.time_predictor.get_overhead_per_step() + step_switching_overhead)
                 step_gen_len = self.get_step_gen_len(req)
