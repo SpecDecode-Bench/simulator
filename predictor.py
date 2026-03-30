@@ -25,6 +25,7 @@ class AccLenPredictMethod(Enum):
     FIXED_3 = 2
     FIXED_5 = 3
     ORACLE = 4
+    ADAPTIVE = 5
 
 ENTROPY_THRESHOLD = 5
 class TimePredictor:
@@ -56,6 +57,7 @@ class TimePredictor:
 class AccLenPredictor:
     def __init__(self, method: AccLenPredictMethod):
         self.model = method
+        self._adaptive_k = {}  # per-request k for ADAPTIVE method
 
     def predict(self,
                 req: Request,
@@ -69,8 +71,24 @@ class AccLenPredictor:
             return 6
         elif self.model == AccLenPredictMethod.ORACLE:
             return gt_acc_len
+        elif self.model == AccLenPredictMethod.ADAPTIVE:
+            k = self._adaptive_k.get(req.id, 5)
+            return k + 1  # input_len = k draft tokens + 1
         else:
             raise ValueError(f"Unknown method: {self.model}")
+
+    def update(self, req_id: str, input_len: int, accepted_tokens: int):
+        """Update adaptive k after a verification step.
+        Assisted generation heuristic: if all matched, k += 2; else k -= 1.
+        """
+        if self.model != AccLenPredictMethod.ADAPTIVE:
+            return
+        k = self._adaptive_k.get(req_id, 5)
+        if accepted_tokens >= input_len:
+            k += 2
+        else:
+            k = max(1, k - 1)
+        self._adaptive_k[req_id] = k
 
     def _get_acc_len(self, probs, threshold):
         acc_len = 0

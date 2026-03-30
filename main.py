@@ -1,3 +1,4 @@
+import os
 import random
 import argparse
 random.seed(42)
@@ -11,6 +12,7 @@ PREDICT_METHOD_MAP = {
     "FIXED_1": AccLenPredictMethod.FIXED_1,
     "FIXED_3": AccLenPredictMethod.FIXED_3,
     "FIXED_5": AccLenPredictMethod.FIXED_5,
+    "ADAPTIVE": AccLenPredictMethod.ADAPTIVE,
     "ORACLE": AccLenPredictMethod.ORACLE,
 }
 ACC_GT_METHOD_MAP = {
@@ -44,7 +46,7 @@ def parse_args():
         "--predict-methods",
         type=str,
         nargs="+",
-        default=["FIXED_1", "FIXED_3", "FIXED_5", "ORACLE"],
+        default=["FIXED_1", "FIXED_3", "FIXED_5", "ADAPTIVE", "ORACLE"],
         choices=list(PREDICT_METHOD_MAP.keys()),
         help="Prediction methods to use"
     )
@@ -85,10 +87,13 @@ def main():
         print(f"{'='*80}\n")
 
         input_filepath = f"data/{model}/combined_{dataset}.jsonl"
-        simulation_output = f"{args.output_dir}/{args.proposer}_{dataset}_speedup.csv"
+        proposer_dir = os.path.join(args.output_dir, args.proposer)
+        os.makedirs(proposer_dir, exist_ok=True)
+        simulation_output = os.path.join(proposer_dir, f"{dataset}_speedup.csv")
 
-        with open(simulation_output, "w") as f:
-            f.write("batch_size,predict_method,acc_method,speedup\n")
+        if not os.path.exists(simulation_output):
+            with open(simulation_output, "w") as f:
+                f.write("batch_size,predict_method,acc_method,speedup\n")
 
         for pm in predict_methods:
             simulator = SpecSimulator(input_filepath, pm, acc_gt_method, dataset)

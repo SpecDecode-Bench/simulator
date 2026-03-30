@@ -206,6 +206,9 @@ class SpecSimulator:
                 request_latencies[req.id].append(verify_time + draft_time + self.time_predictor.get_overhead_per_step() + step_switching_overhead)
                 step_gen_len = self.get_step_gen_len(req)
                 accepted_tokens = min(step_gen_len, step_input_lens[req.id])
+                # only update adaptive k if there are more than 1 draft tokens; handle the case where ngram is not matched
+                if step_input_lens[req.id] > 1:
+                    self.acc_len_predictor.update(req.id, step_input_lens[req.id], accepted_tokens)
                 req.cur_gen_len += accepted_tokens
                 num_tokens_in_kv += accepted_tokens
                 if not req.finished:

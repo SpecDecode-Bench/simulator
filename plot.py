@@ -8,6 +8,7 @@ MARKERS_COLORS = {
     AccLenPredictMethod.FIXED_1.name: ["o", "#1f77b4"],
     AccLenPredictMethod.FIXED_3.name: ["s", "#ff7f0e"],
     AccLenPredictMethod.FIXED_5.name: ["D", "#2ca02c"],
+    AccLenPredictMethod.ADAPTIVE.name: ["^", "#9467bd"],
     AccLenPredictMethod.ORACLE.name: ["*", "#d62728"],
 }
 
@@ -15,6 +16,7 @@ PMNAMES = {
     AccLenPredictMethod.FIXED_1.name: "k=1",
     AccLenPredictMethod.FIXED_3.name: "k=3",
     AccLenPredictMethod.FIXED_5.name: "k=5",
+    AccLenPredictMethod.ADAPTIVE.name: "Adaptive",
     AccLenPredictMethod.ORACLE.name: "Oracle",
 }
 
@@ -34,6 +36,8 @@ MARKERS_COLORS_AM = {
 def _get_style(predict_method):
     if predict_method == AccLenPredictMethod.ORACLE.name:
         return 'dotted', 15, 1
+    elif predict_method == AccLenPredictMethod.ADAPTIVE.name:
+        return '--', 10, 1
     else:
         return '-', 8, 0.75
 
@@ -139,9 +143,9 @@ if __name__ == "__main__":
         if combined:
             dfs = []
             for p in ["eagle3", "ngram", "combined"]:
-                dfs.append(pd.read_csv(os.path.join(args.results_dir, f"{p}_{dataset}_speedup.csv")))
+                dfs.append(pd.read_csv(os.path.join(args.results_dir, p, f"{dataset}_speedup.csv")))
             return pd.concat(dfs, ignore_index=True)
-        return pd.read_csv(os.path.join(args.results_dir, f"{proposer}_{dataset}_speedup.csv"))
+        return pd.read_csv(os.path.join(args.results_dir, proposer, f"{dataset}_speedup.csv"))
 
     for dataset in args.datasets:
         for proposer in args.proposers:
