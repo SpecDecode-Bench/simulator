@@ -23,7 +23,7 @@ PMNAMES = {
 AMNAMES = {
     "NGRAM": "N-gram",
     "EAGLE": "EAGLE3",
-    "COMBINE_NGRAM_EAGLE": "Combine",
+    "COMBINE_NGRAM_EAGLE": "Combined",
 }
 
 MARKERS_COLORS_AM = {
@@ -37,7 +37,7 @@ def _get_style(predict_method):
     if predict_method == AccLenPredictMethod.ORACLE.name:
         return 'dotted', 15, 1
     elif predict_method == AccLenPredictMethod.ADAPTIVE.name:
-        return '--', 10, 1
+        return '-.', 10, 1
     else:
         return '-', 8, 0.75
 
@@ -45,31 +45,20 @@ def _get_style(predict_method):
 def save_legend_only(df, output_filepath, ncol=None, fontsize=16, combined=False):
     fig, ax = plt.subplots(figsize=(1, 1))
 
-    predict_methods = df['predict_method'].unique()
-    acc_methods = df['acc_method'].unique()
     handles = []
     labels = []
+    for subset, color, marker, linestyle, markersize, alpha, label in _get_series(df, combined):
+        line, = ax.plot([], [], color=color, marker=marker,
+                        linestyle=linestyle, linewidth=3,
+                        alpha=alpha, markersize=markersize)
+        handles.append(line)
+        labels.append(label)
 
-    for pm in predict_methods:
-        for am in acc_methods:
-            if am == "COMBINE_NGRAM_EAGLE" and pm != AccLenPredictMethod.ORACLE.name:
-                continue
-            subset = df[(df['predict_method'] == pm) & (df['acc_method'] == am)]
-            if len(subset) > 0:
-                line_style, marker_size, alpha = _get_style(pm)
-                color = MARKERS_COLORS_AM[am] if combined else MARKERS_COLORS[pm][1]
-                marker = MARKERS_COLORS[pm][0]
-                line, = ax.plot([], [],
-                        color=color,
-                        marker=marker,
-                        linestyle=line_style, linewidth=3,
-                        alpha=alpha,
-                        markersize=marker_size)
-                handles.append(line)
-                if combined:
-                    labels.append(f"{PMNAMES[pm]}_{AMNAMES[am]}")
-                else:
-                    labels.append(PMNAMES[pm])
+    # Add shaded region legend entry for combined overhead
+    if combined and 'switching_overhead' in df.columns and df[df['acc_method'] == "COMBINE_NGRAM_EAGLE"]['switching_overhead'].nunique() > 1:
+        patch = ax.fill_between([], [], [], color=MARKERS_COLORS_AM["COMBINE_NGRAM_EAGLE"], alpha=0.2)
+        handles.append(patch)
+        labels.append("Switching overhead")
 
     if ncol is None:
         ncol = len(handles)
@@ -83,26 +72,55 @@ def save_legend_only(df, output_filepath, ncol=None, fontsize=16, combined=False
     plt.close(fig_legend)
 
 
-def plot_speedup(df, output_filepath, combined=False):
-    plt.figure(figsize=(4.5, 5))
-
-    predict_methods = df['predict_method'].unique()
-    acc_methods = df['acc_method'].unique()
-    for pm in predict_methods:
-        for am in acc_methods:
-            if am == "COMBINE_NGRAM_EAGLE" and pm != AccLenPredictMethod.ORACLE.name:
-                continue
+def _get_series(df, combined):
+    """Yield (subset_df, color, marker, linestyle, markersize, alpha, label) for each line to plot."""
+    if combined:
+        pm = AccLenPredictMethod.ORACLE.name
+        for am in df['acc_method'].unique():
             subset = df[(df['predict_method'] == pm) & (df['acc_method'] == am)]
-            line_style, marker_size, alpha = _get_style(pm)
-            color = MARKERS_COLORS_AM[am] if combined else MARKERS_COLORS[pm][1]
-            label = f"{PMNAMES[pm]}_{AMNAMES[am]}"
-            plt.plot(subset['batch_size'], subset['speedup'],
-                    color=color,
-                    marker=MARKERS_COLORS[pm][0],
-                    linestyle=line_style, linewidth=3,
-                    alpha=alpha,
-                    label=label,
-                    markersize=marker_size)
+            if len(subset) == 0:
+                continue
+            # For combined with multiple overhead values, use the no-overhead subset
+            if am == "COMBINE_NGRAM_EAGLE" and 'switching_overhead' in df.columns and subset['switching_overhead'].nunique() > 1:
+                subset = subset[subset['switching_overhead'] == 0.0]
+            yield subset, MARKERS_COLORS_AM[am], MARKERS_COLORS[pm][0], 'dotted', 15, 1, AMNAMES[am]
+    else:
+        for pm in df['predict_method'].unique():
+            for am in df['acc_method'].unique():
+                subset = df[(df['predict_method'] == pm) & (df['acc_method'] == am)]
+                if len(subset) == 0:
+                    continue
+                line_style, marker_size, alpha = _get_style(pm)
+                yield subset, MARKERS_COLORS[pm][1], MARKERS_COLORS[pm][0], line_style, marker_size, alpha, PMNAMES[pm]
+
+
+def _add_overhead_shading(df, ax):
+    """Add shaded region between overhead=0 and overhead>0 for the combined method."""
+    if 'switching_overhead' not in df.columns:
+        return
+    combined = df[df['acc_method'] == "COMBINE_NGRAM_EAGLE"]
+    if combined.empty or combined['switching_overhead'].nunique() <= 1:
+        return
+    no_oh = combined[combined['switching_overhead'] == 0.0].sort_values('batch_size')
+    with_oh = combined[combined['switching_overhead'] > 0.0].sort_values('batch_size')
+    ax.fill_between(no_oh['batch_size'].values,
+                     with_oh['speedup'].values,
+                     no_oh['speedup'].values,
+                     color=MARKERS_COLORS_AM["COMBINE_NGRAM_EAGLE"], alpha=0.2)
+
+
+def plot_speedup(df, output_filepath, combined=False):
+    fig, ax = plt.subplots(figsize=(4.5, 5))
+
+    for subset, color, marker, linestyle, markersize, alpha, label in _get_series(df, combined):
+        ax.plot(subset['batch_size'], subset['speedup'],
+                color=color, marker=marker,
+                linestyle=linestyle, linewidth=3,
+                alpha=alpha, label=label,
+                markersize=markersize)
+
+    if combined:
+        _add_overhead_shading(df, ax)
 
     plt.xlabel('Batch Size', fontsize=16)
     plt.ylabel('Speedup', fontsize=16)
