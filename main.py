@@ -66,6 +66,13 @@ def parse_args():
         help="Directory to save output CSV files"
     )
 
+    parser.add_argument(
+        "--switching-overhead",
+        type=float,
+        default=0.0,
+        help="Method switching overhead in seconds for combined proposer (default: 0)"
+    )
+
     return parser.parse_args()
 
 def main():
@@ -93,15 +100,16 @@ def main():
 
         if not os.path.exists(simulation_output):
             with open(simulation_output, "w") as f:
-                f.write("batch_size,predict_method,acc_method,speedup\n")
+                f.write("batch_size,predict_method,acc_method,switching_overhead,speedup\n")
 
         for pm in predict_methods:
-            simulator = SpecSimulator(input_filepath, pm, acc_gt_method, dataset)
+            simulator = SpecSimulator(input_filepath, pm, acc_gt_method, dataset,
+                                      switching_overhead=args.switching_overhead)
             for batch_size in args.batch_sizes:
-                print(f"[Model: {model}, Proposer: {args.proposer}] Batch Size={batch_size}, Predict Method={pm.name}, Acc GT Method={acc_gt_method.name}")
+                print(f"[Model: {model}, Proposer: {args.proposer}] Batch Size={batch_size}, Predict Method={pm.name}, Acc GT Method={acc_gt_method.name}, Switching Overhead={args.switching_overhead}")
                 speedup = simulator.simulate_like_experiment(batch_size)
                 with open(simulation_output, "a") as f:
-                    f.write(f"{batch_size},{pm.name},{acc_gt_method.name},{speedup:.2f}\n")
+                    f.write(f"{batch_size},{pm.name},{acc_gt_method.name},{args.switching_overhead},{speedup:.2f}\n")
 
 if __name__ == "__main__":
     main()

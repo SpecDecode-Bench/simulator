@@ -13,6 +13,7 @@ class Llama8BH100:
 
     ngram_draft_percentage = 0.005875
     overhead_constant_per_step = 1.20683946e-03
+    # combined_switching_overhead = 1.5e-03 # 1.5ms, an estimate between eagle's constant overhead and per-step overhead
     combined_switching_overhead = 0.0
 
 
@@ -29,8 +30,9 @@ class AccLenPredictMethod(Enum):
 
 ENTROPY_THRESHOLD = 5
 class TimePredictor:
-    def __init__(self, method: ProposeMethod):
+    def __init__(self, method: ProposeMethod, switching_overhead: float = 0.0):
         self.model = Llama8BH100
+        self.model.combined_switching_overhead = switching_overhead
         self.method = method
 
     def predict_forward_pass_time(self, num_tokens_in_kv_cache: int, num_batched_tokens: int):
@@ -52,8 +54,11 @@ class TimePredictor:
     def get_overhead_per_step(self):
         return self.model.overhead_constant_per_step
 
-    def get_switching_overhead(self):
-        return self.model.combined_switching_overhead
+    def get_switching_overhead(self, prev_method: ProposeMethod, cur_method: ProposeMethod):
+        # method switching overhead is only present when switching from ngram to eagle since the ngram draft time is negligible.
+        if prev_method == ProposeMethod.NGRAM and cur_method == ProposeMethod.EAGLE:
+            return self.model.combined_switching_overhead
+        return 0.0
 
 class AccLenPredictor:
     def __init__(self, method: AccLenPredictMethod):

@@ -20,7 +20,8 @@ class SpecSimulator:
     def __init__(self, file_path: str,
                  acc_predict_method: AccLenPredictMethod,
                  acc_gt_method: AccLenGroundTruth,
-                 dataset: str):
+                 dataset: str,
+                 switching_overhead: float = 0.0):
         self.file_path = file_path
         self.data = self.load_data(acc_gt_method)
         self.acc_gt_method = acc_gt_method
@@ -29,6 +30,7 @@ class SpecSimulator:
 
         self.time_predictor = TimePredictor(
             method=self.get_propose_method(),
+            switching_overhead=switching_overhead,
         )
         self.acc_len_predictor = AccLenPredictor(acc_predict_method)
 
@@ -198,8 +200,8 @@ class SpecSimulator:
                 if self.acc_gt_method in (AccLenGroundTruth.COMBINE_NGRAM_EAGLE, AccLenGroundTruth.COMBINE_NGRAM_EAGLE_THREE):
                     cur_winner = self._get_winning_method(req)
                     effective_draft_method = cur_winner
-                    if req.id in prev_winning_method and prev_winning_method[req.id] != cur_winner:
-                        step_switching_overhead = self.time_predictor.get_switching_overhead()
+                    if req.id in prev_winning_method:
+                        step_switching_overhead = self.time_predictor.get_switching_overhead(prev_winning_method[req.id], cur_winner)
                     prev_winning_method[req.id] = cur_winner
 
                 # ngram not matched, NOTE: not very accurate, it could be matched but not accepted.
