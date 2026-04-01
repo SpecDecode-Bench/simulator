@@ -15,7 +15,7 @@ pip install -r requirements.txt
 Run the full simulation and generate plots for all datasets, proposers, and methods:
 
 ```bash
-./simulate.sh
+./simulate_and_plot.sh
 ```
 
 This will:
@@ -95,12 +95,12 @@ Coming soon.
 Please cite our paper if you find the repository helpful. Thank you!
 ```
 @misc{liu2025specdecode,
-      title={Speculative Decoding: Performance or Illusion?}, 
+      title={Speculative Decoding: Performance or Illusion?},
       author={Xiaoxuan Liu and Jiaxiang Yu and Jongseok Park and Ion Stoica and Alvin Cheung},
       year={2025},
       eprint={2601.11580},
       archivePrefix={arXiv},
       primaryClass={cs.CL},
-      url={https://arxiv.org/abs/2601.11580}, 
+      url={https://arxiv.org/abs/2601.11580},
 }
 ```
