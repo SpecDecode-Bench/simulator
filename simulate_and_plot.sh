@@ -85,7 +85,7 @@ echo ""
 echo "=========================================="
 echo "Generating Plots..."
 echo "=========================================="
-/data/jxyu/miniconda3/spec-sim/bin/python plot.py \
+python plot.py \
     --results-dir ${OUTPUT_DIR} \
     --figures-dir figures \
     --datasets ${DATASETS} \
